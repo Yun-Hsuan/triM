@@ -1,0 +1,3 @@
+FILE(REMOVE_RECURSE
+  "libuni10.a"
+)

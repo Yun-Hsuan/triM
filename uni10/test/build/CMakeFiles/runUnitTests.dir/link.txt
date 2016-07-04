@@ -1,0 +1,1 @@
+/usr/bin/c++   -O3 -std=c++11    CMakeFiles/runUnitTests.dir/testQnum.o CMakeFiles/runUnitTests.dir/testBond.o CMakeFiles/runUnitTests.dir/testTools.o CMakeFiles/runUnitTests.dir/testMatrix.o CMakeFiles/runUnitTests.dir/testUniTensor.o CMakeFiles/runUnitTests.dir/testNetwork.o  -o runUnitTests -rdynamic -lpthread -lgtest -lgtest_main -luni10 

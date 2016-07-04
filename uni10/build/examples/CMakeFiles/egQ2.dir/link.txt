@@ -1,0 +1,1 @@
+/opt/intel/composer_xe_2015.3.187/bin/intel64/icpc    -fPIC -pthread -std=c++11  -O3 -DNDEBUG  -pthread CMakeFiles/egQ2.dir/egQ2.cpp.o  -o egQ2 -rdynamic ../libuni10.a -lmkl_rt -lhdf5 -lz -ldl -lm -lhdf5_cpp -lhdf5 -lz -ldl -lm -lhdf5_cpp 
