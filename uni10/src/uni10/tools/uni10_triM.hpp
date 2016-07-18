@@ -2,7 +2,9 @@
 #define UNI10_TRIM_H
 
 
+#include <iostream>
 #include <cstdio>
+
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
@@ -11,7 +13,7 @@
 #include <cuda.h>
 //#include <complex>
 
-using namespace std;
+
 class triM{
 private:
     ///struct for each <double> variable pointer info
@@ -67,14 +69,63 @@ public:
   //void put_devptr(std::complex* Diptr, size_t &memsz);
 
   /**@brief: func. for putting the "host" pointers into container
-   * @param: [1] *Hiptr <double> / <complex> : device pointer in UVA (<double> type or <complex> type)
+   * @param: [1] *Hiptr <double> / <complex> : device pointer allocated using malloc/calloc (<double> type or <complex> type)
    * @param: [2] &memsz <size_t> : the memory size of the pointer.
   */
   void put_hostptr(double* Hiptr, size_t &memsz);
   //void put_hostptr(std::complex* Hiptr, size_t &memsz);
 
+  /**@brief: func. for putting the "host UAV" pointers into container
+   * @param: [1] *Hiptr <double> / <complex> : device pointer in UVA (<double> type or <complex> type)
+   * @param: [2] &memsz <size_t> : the memory size of the pointer.
+  */
+  void put_hostUAVptr(double* Hiptr, size_t &memsz);
+  //void put_hostUAVptr(std::complex* Hiptr, size_t &memsz);
+
+  /**@brief: func. for free the memory.
+   * @param: [1] *Hiptr <double> / <complex> : existance pointers.
+   * @return: 0 - OK
+   *          1 - the pointer <Hiptr> is not in triM
+  */
+  bool Memfree(double* Hiptr);
+  //bool Memfree(complex* Hiptr);
+
+
+
+
 };
 
+
+
+
+/**@brief: Class contain all the GPUs info. of current execution
+ * @content: query all the GPUs info. for
+ *            1. occupency and warp spanning
+ *            2. dynamic pipe line(D2H/H2D).
+*/
+//Note , this should be call in the init stage
+class GPU_enviroment{
+public:
+
+    ///@brief: number of avalible GPUs
+    int cnt;
+    int Available_cnt;
+    std::vector< std::pair<bool,cudaDeviceProp> > DevInfos;
+
+    ///@brief: constructor
+    GPU_enviroment();
+
+    //~GPU_enviroment();
+    ///@brief: print the info of GPUs.
+    void print_info();
+
+
+
+
+};
+
+///@brief: overload << for stdout GPU_enviroment class.
+std::ostream& operator<<(std::ostream& os, GPU_enviroment& gpue);
 
 #endif
 
