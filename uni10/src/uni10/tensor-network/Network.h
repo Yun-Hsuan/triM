@@ -29,17 +29,10 @@
 *****************************************************************************/
 #ifndef NETWORK_H
 #define NETWORK_H
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <string>
-#include <assert.h>
-#include <vector>
-#include <map>
-#include <stdexcept>
-#include <sstream>
+
 //Bond property
-#include <uni10/data-structure/uni10_struct.h>
+#include <uni10/tensor-network/UniTensor.h>
+
 namespace uni10 {
 
     ///@class Network

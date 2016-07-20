@@ -27,12 +27,8 @@
 *  @since 1.0.0
 *
 *****************************************************************************/
-#include <uni10/tools/uni10_tools.h>
-#include <uni10/numeric/lapack/uni10_lapack.h>
-#include <uni10/data-structure/uni10_struct.h>
-#include <uni10/data-structure/Bond.h>
-#include <uni10/tensor-network/Matrix.h>
 #include <uni10/tensor-network/UniTensor.h>
+
 
 
 namespace uni10{

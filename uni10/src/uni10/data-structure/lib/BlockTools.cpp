@@ -63,7 +63,7 @@ namespace uni10{
         Matrix Mc(RTYPE, Ma.Rnum, Mb.Cnum, true);
         Mc.set_zero(RTYPE);
         size_t min = std::min(Ma.elemNum(), Mb.elemNum());
-        elemCopy(Mc.m_elem, Ma.m_elem, min * sizeof(Real), Mc.ongpu, Ma.ongpu);
+        elemCopy(Mc.m_elem, Ma.m_elem, 1, min, Mc.ongpu, Ma.ongpu, Mc.diag);
         vectorMul(Mc.m_elem, Mb.m_elem, min, Mc.ongpu, Mb.ongpu);
         return Mc;
       }
@@ -102,7 +102,7 @@ namespace uni10{
       Matrix Mc(CTYPE, Ma.Rnum, Mb.Cnum, true);
       Mc.set_zero(CTYPE);
       size_t min = std::min(Ma.elemNum(), Mb.elemNum());
-      elemCopy(Mc.cm_elem, Ma.cm_elem, min * sizeof(Complex), Mc.ongpu, Ma.ongpu);
+      elemCopy(Mc.cm_elem, Ma.cm_elem, 1, min, Mc.ongpu, Ma.ongpu, Mc.diag);
       vectorMul(Mc.cm_elem, Mb.cm_elem, min, Mc.ongpu, Mb.ongpu);
       return Mc;
     }

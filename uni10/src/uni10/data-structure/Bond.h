@@ -30,22 +30,10 @@
 #ifndef BOND_H
 #define BOND_H
 
-#include <iostream>
-#include <iomanip>
-#include <assert.h>
-#include <vector>
-#include <map>
-#include <uni10/datatype.hpp>
-#include <stdexcept>
-#include <sstream>
+#include <uni10/datatype/Qnum.h>
+#include <uni10/tools/uni10_tools.h>
 
 namespace uni10 {
-
-//!  Bond types
-enum bondType {
-    BD_IN = 1, ///<Defines an incoming Bond
-    BD_OUT = -1  ///<Defines an outgoing Bond
-};
 
 class UniTensor;
 

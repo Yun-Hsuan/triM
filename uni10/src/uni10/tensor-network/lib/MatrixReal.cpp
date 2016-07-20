@@ -27,50 +27,71 @@
 *  @since 1.0.0
 *
 *****************************************************************************/
-#include <uni10/tools/uni10_tools.h>
-#include <uni10/numeric/lapack/uni10_lapack.h>
 #include <uni10/tensor-network/Matrix.h>
 
 
 namespace uni10{
 
-void Matrix::init(rflag tp, bool _ongpu){ //Initialize and set the ongpu flag.
+void Matrix::init(rflag uni10_tp, bool _ongpu){ //Initialize and set the ongpu flag.
 
-  checkUni10TypeError(tp);
+  checkUni10TypeError(uni10_tp);
+
   if(elemNum()){
-    if(GMODE == 1)	  // Try to allocate GPU memory
-      m_elem = (Real*)elemAlloc(elemNum() * sizeof(Real), ongpu);
-    else{
-      m_elem = (Real*)elemAllocForce(elemNum() * sizeof(Real), _ongpu);
-      ongpu = _ongpu;
+
+    if(GMODE == 1){
+
+      // Try to allocate GPU memory.
+      m_elem = (Real*)elemAlloc(Rnum, Cnum, sizeof(Real),ongpu, diag);
+
     }
+    else{             
+
+      // If GMODE == 1 or 2, force malloc on CPU and GPU.
+      ongpu = _ongpu;
+      m_elem = (Real*)elemAllocForce(Rnum, Cnum, sizeof(Real), ongpu, diag);
+
+    }
+
   }
+
   cm_elem = NULL;
 
 }
 
 void Matrix::init(const Real* _elem, bool src_ongpu){
+
   init(RTYPE, ongpu);
-  elemCopy(m_elem, _elem, elemNum() * sizeof(Real), ongpu, src_ongpu);
+
+  elemCopy(m_elem, _elem, Rnum, Cnum, ongpu, src_ongpu, diag);
+
 }
 
 Matrix::Matrix(rflag tp, size_t _Rnum, size_t _Cnum, bool _diag, bool _ongpu):Block(tp, _Rnum, _Cnum, _diag){
+
   try{
+
     checkUni10TypeError(tp);
+
     init(tp, _ongpu);
+
     if(elemNum())
-      elemBzero(m_elem, elemNum() * sizeof(Real), ongpu);
+      elemBzero(m_elem, Rnum, Cnum, ongpu, diag);
+
   }
   catch(const std::exception& e){
     propogate_exception(e, "In constructor Matrix::Matrix(uni10::rflag, size_t, size_t, bool=false):");
   }
+
 }
 
 Matrix::Matrix(size_t _Rnum, size_t _Cnum, const Real* _elem, bool _diag, bool _ongpu, bool src_ongpu): Block(RTYPE, _Rnum, _Cnum, _diag){
   try{
+
     init(RTYPE, _ongpu);
-    if(elemNum())
-      elemCopy(m_elem, _elem, elemNum() * sizeof(Real), ongpu, src_ongpu);
+    if(elemNum()){
+      elemCopy(m_elem, _elem, Rnum, Cnum, ongpu, src_ongpu, diag);
+    }
+
   }
   catch(const std::exception& e){
     propogate_exception(e, "In constructor Matrix::Matrix(size_t, size_t, double*, bool=false):");
@@ -161,7 +182,7 @@ void Matrix::setElem(const Real* elem, bool src_ongpu){
       MelemFree();
       init(RTYPE, ongpu);
     }
-    elemCopy(m_elem, elem, elemNum() * sizeof(Real), ongpu, src_ongpu);
+    elemCopy(m_elem, elem, Rnum, Cnum, ongpu, src_ongpu, diag);
   }
   catch(const std::exception& e){
     propogate_exception(e, "In function Matrix::setElem(const double*, bool=false):");
@@ -170,15 +191,18 @@ void Matrix::setElem(const Real* elem, bool src_ongpu){
 
 void Matrix::identity(rflag tp){
   try{
+
     checkUni10TypeError(tp);
+
     diag = true;
+
     if(m_elem != NULL)
       elemFree(m_elem, elemNum() * sizeof(Real), ongpu);
 
     if(GMODE == 1)
-      m_elem = (Real*)elemAlloc(elemNum() * sizeof(Real), ongpu);
+      m_elem = (Real*)elemAlloc(Rnum, Cnum, sizeof(double), ongpu, diag);
     else
-      m_elem = (Real*)elemAllocForce(elemNum() * sizeof(Real), ongpu);
+      m_elem = (Real*)elemAllocForce(Rnum, Cnum, sizeof(double), ongpu, diag);
     
     setDiagIdentity(m_elem, Rnum, Cnum, ongpu);
   }
@@ -198,16 +222,23 @@ void Matrix::set_zero(rflag tp){
   }
 }
 
-void Matrix::randomize(rflag tp){
+void Matrix::randomize(rflag uni10_tp){
+
   try{
-    checkUni10TypeError(tp);
+
+    // Uni10 type check. 
+    checkUni10TypeError(uni10_tp);
+
     if(!ongpu && GMODE == 1)
       m_elem = (Real*)mvGPU(m_elem, elemNum() * sizeof(Real), ongpu);
-    elemRand(m_elem, elemNum(), ongpu);
+
+    elemRand(m_elem, Rnum, Cnum, ongpu, diag);
+
   }
   catch(const std::exception& e){
     propogate_exception(e, "In function Matrix::randomize(uni10::rflag ):");
   }
+
 }
 
 void Matrix::orthoRand(rflag tp){

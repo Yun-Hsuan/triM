@@ -27,14 +27,7 @@
 *  @since 0.1.0
 *
 *****************************************************************************/
-#include <uni10/tools/uni10_tools.h>
-#include <uni10/numeric/lapack/uni10_lapack.h>
-#include <uni10/data-structure/uni10_struct.h>
-#include <uni10/data-structure/Bond.h>
-#include <uni10/tensor-network/Matrix.h>
 #include <uni10/tensor-network/UniTensor.h>
-#include <uni10/hdf5io/uni10_hdf5io.h>
-#include <deque>
 
 
 
@@ -388,11 +381,11 @@ UniTensor::UniTensor(const std::vector<Bond>& _bonds, const std::string& _name):
   }
 }
 
-UniTensor::UniTensor(const std::string stp, const std::vector<Bond>& _bonds, const std::string& _name): name(_name), status(0), bonds(_bonds){
+UniTensor::UniTensor(const std::string str_tp, const std::vector<Bond>& _bonds, const std::string& _name): name(_name), status(0), bonds(_bonds){
   try{
-    if(stp == "R")
+    if(str_tp == "R")
       initUniT(RTYPE);
-    else if(stp == "C")
+    else if(str_tp == "C")
       initUniT(CTYPE);
   }
   catch(const std::exception& e){

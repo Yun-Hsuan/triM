@@ -31,30 +31,24 @@
 *****************************************************************************/
 #ifndef BLOCK_H
 #define BLOCK_H
-#include <iostream>
-#include <iomanip>
-#include <assert.h>
-#include <cstdint>
-#include <cstdio>
-#include <vector>
-#include <uni10/datatype.hpp>
-#include <stdexcept>
-#include <complex>
 
+#include <uni10/datatype.hpp>
+#include <uni10/tools/uni10_tools.h>
+#include <uni10/numeric/lapack/uni10_lapack.h>
 
 namespace uni10{
     
-//! Real datatype flag
-    enum rflag{
-	RNULL = 0, ///< Real datatype not defined
-	RTYPE = 1 ///< Real datatype defined
-    };
-
-//! Complex datatype flag
-    enum cflag{
-	CNULL = 0,///< Complex datatype not defined
-	CTYPE = 2 ///< Complex datatype defined
-    };
+////! Real datatype flag
+//    enum rflag{
+//	RNULL = 0, ///< Real datatype not defined
+//	RTYPE = 1 ///< Real datatype defined
+//    };
+//
+////! Complex datatype flag
+//    enum cflag{
+//	CNULL = 0,///< Complex datatype not defined
+//	CTYPE = 2 ///< Complex datatype defined
+//    };
 
     class UniTensor;
     class Matrix;

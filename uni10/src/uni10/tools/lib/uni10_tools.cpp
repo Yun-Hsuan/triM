@@ -28,9 +28,8 @@
 *
 *****************************************************************************/
 #include <uni10/tools/uni10_tools.h>
-#include <cassert>
-#include <string.h>
-#include <map>
+
+
 
 namespace uni10 {
 
@@ -40,6 +39,7 @@ bool ONGPU = false;  //default CPU
 int GMODE = 0;       //default CPU
 size_t MEM_USAGE = 0;
 size_t GPU_FREE_MEM = 0;
+int blocksize = 32;  //defualt 32
 
 std::vector<_Swap> recSwap(std::vector<int>& _ord) { //Given the reshape order out to in.
     //int ordF[n];

@@ -27,27 +27,33 @@
 *  @since 1.0.0
 *
 *****************************************************************************/
-#include <uni10/tools/uni10_tools.h>
-#include <uni10/numeric/lapack/uni10_lapack.h>
 #include <uni10/tensor-network/Matrix.h>
 
 
 namespace uni10{
 
   void Matrix::init(cflag tp, bool _ongpu){
-    
+
     checkUni10TypeError(tp);
+
     if(elemNum()){
-      if(_ongpu)	// Try to allocate GPU memory
-        cm_elem = (Complex*)elemAlloc(elemNum() * sizeof(Complex), ongpu);
+      if(_ongpu)	
+
+        // Try to allocate GPU memory
+        cm_elem = (Complex*)elemAlloc(Rnum, Cnum, sizeof(Complex), ongpu, diag);
+
       else{
-        cm_elem = (Complex*)elemAllocForce(elemNum() * sizeof(Complex), _ongpu);
+
+        // If GMODE == 1 or 2, force malloc on CPU and GPU.
         ongpu = _ongpu;
+        cm_elem = (Complex*)elemAllocForce(Rnum, Cnum, sizeof(Complex), ongpu, diag);
+
       }
     }
+
     m_elem = NULL;
 
-  }
+  } 
 
   void Matrix::init(const Complex* _elem, bool src_ongpu){
 
@@ -61,7 +67,7 @@ Matrix::Matrix(cflag tp, size_t _Rnum, size_t _Cnum, bool _diag, bool _ongpu):Bl
     checkUni10TypeError(tp);
     init(tp, _ongpu);
     if(elemNum())
-      elemBzero(cm_elem, elemNum() * sizeof(Complex), ongpu);
+      elemBzero(cm_elem, Rnum, Cnum, ongpu, diag);
   }
   catch(const std::exception& e){
     propogate_exception(e, "In constructor Matrix::Matrix(uni10::cflag, size_t, size_t, bool ,bool = false):");
@@ -161,7 +167,7 @@ void Matrix::setElem(const Complex* elem, bool src_ongpu){
       c_flag = CTYPE;
       init(CTYPE, ongpu);
     }
-    elemCopy(cm_elem, elem, elemNum() * sizeof(Complex), ongpu, src_ongpu);
+    elemCopy(cm_elem, elem, Rnum, Cnum, ongpu, src_ongpu, diag);
   }
   catch(const std::exception& e){
     propogate_exception(e, "In function Matrix::setElem(const Complex*, bool=false):");

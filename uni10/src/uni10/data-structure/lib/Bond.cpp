@@ -28,7 +28,6 @@
 *
 *****************************************************************************/
 #include <uni10/data-structure/Bond.h>
-#include <uni10/tools/uni10_tools.h>
 
 namespace uni10{
 

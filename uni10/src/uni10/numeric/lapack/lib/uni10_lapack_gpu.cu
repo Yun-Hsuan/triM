@@ -32,9 +32,7 @@
 #else
   #include <uni10/numeric/lapack/uni10_lapack_wrapper.h>
 #endif
-#include <string.h>
-#include <uni10/tools/helper_uni10.h>
-#include <uni10/tools/uni10_tools.h>
+
 #include <uni10/numeric/lapack/uni10_lapack.h>
 
 namespace uni10{
@@ -196,6 +194,7 @@ void vectorAdd(double* Y, double* X, size_t N, bool y_ongpu, bool x_ongpu){
     if(x_ongpu)
       elemFree(elem, memsize, false);
   }
+
 }
 
 void vectorScal(double a, double* X, size_t N, bool ongpu){

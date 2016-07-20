@@ -29,15 +29,17 @@
 *****************************************************************************/
 #ifndef UNI10_LAPACK_H
 #define UNI10_LAPACK_H
-#include <cstdint>
-#include <limits.h>
-#include <assert.h>
-#include <sstream>
-#include <stdexcept>
-#include <cmath>
-#include <complex>
+
+#include <uni10/datatype.hpp>
+#include <uni10/tools/uni10_tools.h>
+
+#ifdef CUDA_SUPPORT
+	#include <uni10/tools/uni10_tools_gpu_kernel.h>
+	#include <uni10/tools/helper_uni10.h>
+#endif
 
 namespace uni10{
+
 enum mmtype{
 	MM_DDD = 0,
 	MM_DDH = 1,
@@ -48,6 +50,7 @@ enum mmtype{
 	MM_HHD = 6,
 	MM_HHH = 7
 };
+
 void uni10Dgemm(int p, int q, int M, int N, int K, double* A, double* B, double* C, mmtype how);
 void matrixMul(double* A, double* B, int M, int N, int K, double* C, bool ongpuA, bool ongpuB, bool ongpuC);
 void vectorAdd(double* Y, double* X, size_t N, bool y_ongpu, bool x_ongpu);// Y = Y + X
@@ -74,12 +77,11 @@ void setIdentity(double* elem, size_t M, size_t N, bool ongpu);
 void setDiagIdentity(double* elem, size_t M, size_t N, bool ongpu);
 void reshapeElem(double* elem, size_t* transOffset);
 bool lanczosEV(double* A, double* psi, size_t dim, size_t& max_iter, double err_tol, double& eigVal, double* eigVec, bool ongpu);
-//====== real qr rq ql lq ======//
 void matrixQR(double* Mij_ori, int M, int N, double* Q, double* R, bool ongpu);
 void matrixRQ(double* Mij_ori, int M, int N, double* Q, double* R, bool ongpu);
 void matrixQL(double* Mij_ori, int M, int N, double* Q, double* L, bool ongpu);
 void matrixLQ(double* Mij_ori, int M, int N, double* Q, double* L, bool ongpu);
-//==============================//
+
 /***** Complex version *****/
 void matrixSVD(std::complex<double>* Mij_ori, int M, int N, std::complex<double>* U, double *S, std::complex<double>* vT, bool ongpu);
 void matrixSVD(std::complex<double>* Mij_ori, int M, int N, std::complex<double>* U, std::complex<double>* S, std::complex<double>* vT, bool ongpu);

@@ -29,25 +29,11 @@
 *****************************************************************************/
 #ifndef QNUM_H
 #define QNUM_H
-#include <iostream>
-#include <iomanip>
-#include <assert.h>
-#include <stdexcept>
-#include <sstream>
-#include <exception>
+
+#include <uni10/datatype.hpp>
+#include <uni10/tools/uni10_tools.h>
 
 namespace uni10 {
-
-//! Parity/Z2 types
-enum parityType {
-    PRT_EVEN = 0, ///< Parity/Z2 even
-    PRT_ODD = 1   ///< Parity/Z2 odd
-};
-//! Fermion parity types
-enum parityFType {
-    PRTF_EVEN = 0, ///< Fermion parity even
-    PRTF_ODD = 1   ///< Fermion parity odd
-};
 
 
 

@@ -29,23 +29,11 @@
  *****************************************************************************/
 #ifndef UNITENSOR_H
 #define UNITENSOR_H
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-#include <cstdio>
-#include <vector>
-#include <deque>
-#include <map>
-#include <set>
-#include <string>
-#include <assert.h>
-#include <sstream>
-#include <stdexcept>
-#include <uni10/datatype.hpp>
+
 #include <uni10/data-structure/uni10_struct.h>
 #include <uni10/data-structure/Bond.h>
-#include <uni10/data-structure/Block.h>
 #include <uni10/tensor-network/Matrix.h>
+#include <uni10/hdf5io/uni10_hdf5io.h>
 
 /// @brief Uni10 - the Universal Tensor %Network Library
 namespace uni10 {
@@ -336,7 +324,7 @@ namespace uni10 {
         ///
         /// @param val Value of the scalar
         UniTensor(const std::vector<Bond>& _bonds, const std::string& _name = "");
-        UniTensor(const std::string tp, const std::vector<Bond>& _bonds, const std::string& _name = "");
+        UniTensor(const std::string str_tp, const std::vector<Bond>& _bonds, const std::string& _name = "");
 
         /// @brief Create a UniTensor from a list of Bond's
         /// @param _bonds List of bonds

@@ -29,11 +29,14 @@
 *****************************************************************************/
 #ifndef UNI10_LAPACK_WRAPPER_H
 #define UNI10_LAPACK_WRAPPER_H
+
 #include <stdexcept>
 #include <cstdint>
 #include <complex>
 #include <iostream>
+
 extern "C" {
+
 // BLAS functions
 void dgemm_(const char *transa, const char *transb, const int32_t *m, const int32_t *n, const int32_t *k,
            const double *alpha, const double *a, const int32_t *lda, const double *b, const int32_t *ldb,
@@ -86,37 +89,45 @@ void dstev_( const char* jobz, const int32_t* n, const double* d, const double* 
              const int32_t* ldaz, const double* work, int32_t* info );
 
 void dgetrf_( const int32_t *m, const int32_t *n, const double *a,  const int32_t *lda, const int32_t *ipiv, int32_t* info );
+
 void zgetrf_( const int32_t *m, const int32_t *n, const std::complex<double> *a,  const int32_t *lda, const int32_t *ipiv, int32_t* info );
+
 void dgetri_( const int32_t *n, const double *a,  const int32_t *lda, const int32_t *ipiv, const double* work, const int32_t* lwork, int32_t* info );
+
 void zgetri_( const int32_t *n, const std::complex<double> *a, const int32_t *lda, const int32_t *ipiv, const std::complex<double> *work, const int32_t *lwork, int32_t *info );
 
-/*===========================  real  qr rq lq ql  =================================*/
 void dgelqf_( const int32_t* m, const int32_t* n, double* a, const int32_t* lda, double* tau, double* work, const int32_t* lwork, int32_t* info );
+
 void dorglq_( const int32_t* m, const int32_t* n, const int32_t* k, double* a, const int32_t* lda, const double* tau, double* work, const int32_t* lwork, int32_t* info );
 
 void dgeqlf_( const int32_t* m, const int32_t* n, double* a, const int32_t* lda, double* tau, double* work, const int32_t* lwork, int32_t* info );
+
 void dorgql_( const int32_t* m, const int32_t* n, const int32_t* k, double* a, const int32_t* lda, const double* tau, double* work, const int32_t* lwork, int32_t* info );
 
 void dgeqrf_( const int32_t* m, const int32_t* n, double* a, const int32_t* lda, double* tau, double* work, const int32_t* lwork, int32_t* info );
+
 void dorgqr_( const int32_t* m, const int32_t* n, const int32_t* k, double* a, const int32_t* lda, const double* tau, double* work, const int32_t* lwork, int32_t* info );
 
 void dgerqf_( const int32_t* m, const int32_t* n, double* a, const int32_t* lda, double* tau, double* work, const int32_t* lwork, int32_t* info );
+
 void dorgrq_( const int32_t* m, const int32_t* n, const int32_t* k, double* a, const int32_t* lda, const double* tau, double* work, const int32_t* lwork, int32_t* info );
-/*=================================================================================*/
-/*===========================  complex  qr rq lq ql  ==============================*/
+
 void zgeqrf_( const int32_t* m, const int32_t* n, std::complex<double>* a, const int32_t* lda, std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
+
 void zungqr_( const int32_t* m, const int32_t* n, const int32_t* k, std::complex<double>* a, const int32_t* lda, const std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
 
 void zgerqf_( const int32_t* m, const int32_t* n, std::complex<double>* a, const int32_t* lda, std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
+
 void zungrq_( const int32_t* m, const int32_t* n, const int32_t* k, std::complex<double>* a, const int32_t* lda, const std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
 
 void zgelqf_( const int32_t* m, const int32_t* n, std::complex<double>* a, const int32_t* lda, std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
+
 void zunglq_( const int32_t* m, const int32_t* n, const int32_t* k, std::complex<double>* a, const int32_t* lda, const std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
 
 void zgeqlf_( const int32_t* m, const int32_t* n, std::complex<double>* a, const int32_t* lda, std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
+
 void zungql_( const int32_t* m, const int32_t* n, const int32_t* k, std::complex<double>* a, const int32_t* lda, const std::complex<double>* tau, std::complex<double>* work, const int32_t* lwork, int32_t* info );
 
-/*=================================================================================*/
 }
 
 

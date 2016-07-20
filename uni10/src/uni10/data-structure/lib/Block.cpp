@@ -27,8 +27,7 @@
 *  @since 0.1.0
 *
 *****************************************************************************/
-#include <uni10/numeric/lapack/uni10_lapack.h>
-#include <uni10/tools/uni10_tools.h>
+#include <uni10/data-structure/Block.h>
 #include <uni10/tensor-network/Matrix.h>
 
 
@@ -52,7 +51,7 @@ namespace uni10{
         Real* elem;
         if(b.ongpu){
           elem = (Real*)malloc(b.elemNum() * sizeof(Real));
-          elemCopy(elem, b.m_elem, b.elemNum() * sizeof(Real), false, b.ongpu);
+          elemCopy(elem, b.m_elem, b.Rnum, b.Cnum, false, b.ongpu, b.diag);
         }
         else
           elem = b.m_elem;
@@ -82,7 +81,7 @@ namespace uni10{
         Complex* elem;
         if(b.ongpu){
           elem = (Complex*)malloc(b.elemNum() * sizeof(Complex));
-          elemCopy(elem, b.cm_elem, b.elemNum() * sizeof(Complex), false, b.ongpu);
+          elemCopy(elem, b.cm_elem, b.Rnum, b.Cnum, false, b.ongpu, b.diag);
         }
         else
           elem = b.cm_elem;
@@ -215,14 +214,18 @@ namespace uni10{
   bool Block::isOngpu()const{return ongpu;}
 
   size_t Block::elemNum()const{
+
     if(diag)
       return (Rnum < Cnum ? Rnum : Cnum);
     else
       return Rnum * Cnum;
+
   }
 
   int Block::typeID()const{
+
     return r_flag + c_flag;
+
   }
 
   void Block::savePrototype(const std::string& fname)const{

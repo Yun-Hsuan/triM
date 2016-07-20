@@ -27,8 +27,7 @@
 *  @since 0.1.0
 *
 *****************************************************************************/
-#include <uni10/numeric/lapack/uni10_lapack.h>
-#include <uni10/tools/uni10_tools.h>
+#include <uni10/data-structure/Block.h>
 #include <uni10/tensor-network/Matrix.h>
 
 
@@ -94,7 +93,7 @@ namespace uni10{
       Complex* elem = cm_elem;
       if(ongpu){
         elem = (Complex*)malloc(elemNum() * sizeof(Complex));
-        elemCopy(elem, cm_elem, elemNum() * sizeof(Complex), false, ongpu);
+        elemCopy(elem, cm_elem, Rnum, Cnum, false, ongpu, diag);
       }
       fwrite(elem, sizeof(Complex), elemNum(), fp);
       if(ongpu)

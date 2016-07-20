@@ -4,9 +4,9 @@
 #include <uni10/data-structure/uni10_struct.h>
 
 #ifdef CUDA_SUPPORT
-#include <cuda_runtime.h>
-#include <cublas_v2.h>
-#include <cusolverDn.h>
+  #include <cuda_runtime.h>
+  #include <cublas_v2.h>
+  #include <cusolverDn.h>
 #endif
 
 #define checkUni10TypeError(ans){uni10TypeAssert((ans),__FILE__,__LINE__,__PRETTY_FUNCTION__);}

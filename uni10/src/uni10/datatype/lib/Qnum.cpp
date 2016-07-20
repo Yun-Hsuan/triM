@@ -28,7 +28,6 @@
 *
 *****************************************************************************/
 #include <uni10/datatype/Qnum.h>
-#include <uni10/tools/uni10_tools.h>
 
 namespace uni10{
 bool Qnum::Fermionic = false;

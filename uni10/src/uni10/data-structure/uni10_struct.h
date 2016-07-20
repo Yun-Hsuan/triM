@@ -29,12 +29,12 @@
 *****************************************************************************/
 #ifndef UNI10_STRUCT_H
 #define UNI10_STRUCT_H
-#include <cstdint>
-#include <string>
-#include <stdexcept>
-#include <vector>
-#include <uni10/data-structure/Block.h>
+
+//#include <uni10/data-structure/Block.h>
+#include <uni10/datatype.hpp>
+
 namespace uni10{
+
 typedef struct{
 	int b1;
 	int b2;

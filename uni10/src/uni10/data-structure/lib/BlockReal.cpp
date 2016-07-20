@@ -27,8 +27,7 @@
 *  @since 0.1.0
 *
 *****************************************************************************/
-#include <uni10/numeric/lapack/uni10_lapack.h>
-#include <uni10/tools/uni10_tools.h>
+#include <uni10/data-structure/Block.h>
 #include <uni10/tensor-network/Matrix.h>
 
 
@@ -61,18 +60,24 @@ namespace uni10{
   }
 
   Real* Block::getElem(rflag tp)const{
+
     checkUni10TypeError(tp);
+
     try{
+
       if(typeID() == 2){
         std::ostringstream err;
         err<<"This matrix is COMPLEX. Please use getElem(uni10::cflag ) instead.";
         throw std::runtime_error(exception_msg(err.str()));
       }
+
       return m_elem;
+
     }
     catch(const std::exception& e){
       propogate_exception(e, "In function Block::getElem(uni10::rflag ):");
     }
+
     return m_elem;
   }
 
@@ -94,7 +99,7 @@ namespace uni10{
       Real* elem = m_elem;
       if(ongpu){
         elem = (Real*)malloc(elemNum() * sizeof(Real));
-        elemCopy(elem, m_elem, elemNum() * sizeof(Real), false, ongpu);
+        elemCopy(elem, m_elem, Rnum, Cnum, false, ongpu, diag);
       }
       fwrite(elem, sizeof(Real), elemNum(), fp);
       if(ongpu)
@@ -256,21 +261,27 @@ namespace uni10{
   }
 
   Matrix Block::inverse(rflag tp)const{
+
     try{
+
       checkUni10TypeError(tp);
+
       if(!(Rnum == Cnum)){
         std::ostringstream err;
         err<<"Cannot perform inversion on a non-square matrix.";
         throw std::runtime_error(exception_msg(err.str()));
+
       }
+
       Matrix invM(*this);
-      assert(ongpu == invM.isOngpu());
       matrixInv(invM.m_elem, Rnum, invM.diag, invM.ongpu);
       return invM;
+
     }
     catch(const std::exception& e){
       propogate_exception(e, "In function Matrix::inverse(uni10::rflag ):");
     }
+
     return Matrix();
   }
 
@@ -345,26 +356,33 @@ namespace uni10{
     return outs;
   }
 
-  std::vector<Matrix> Block::eigh(rflag tp)const{
+  std::vector<Matrix> Block::eigh(rflag uni10_tp)const{
+
     std::vector<Matrix> outs;
+
     try{
-      checkUni10TypeError(tp);
+
+      checkUni10TypeError(uni10_tp);
+
       if(!(Rnum == Cnum)){
         std::ostringstream err;
         err<<"Cannot perform eigenvalue decomposition on a non-square matrix.";
         throw std::runtime_error(exception_msg(err.str()));
       }
+
       if(diag){
         std::ostringstream err;
         err<<"Cannot perform eigenvalue decomposition on a diagonal matrix. Need not to do so.";
         throw std::runtime_error(exception_msg(err.str()));
       }
+
       //GPU_NOT_READY
       outs.push_back(Matrix(RTYPE, Rnum, Cnum, true, ongpu));
       outs.push_back(Matrix(RTYPE, Rnum, Cnum, false, ongpu));
       Matrix Eig(RTYPE, Rnum, Cnum, true, ongpu);
       eigSyDecompose(m_elem, Rnum, Eig.m_elem, outs[1].m_elem, ongpu);
       outs[0] = Eig;
+
     }
     catch(const std::exception& e){
       propogate_exception(e, "In function Matrix::eigh(uni10::rflag ):");

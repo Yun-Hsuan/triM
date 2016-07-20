@@ -27,8 +27,6 @@
 *  @since 0.1.0
 *
 *****************************************************************************/
-#include <uni10/tools/uni10_tools.h>
-#include <uni10/numeric/lapack/uni10_lapack.h>
 #include <uni10/tensor-network/Matrix.h>
 
 
@@ -72,9 +70,9 @@ Matrix& Matrix::operator=(const Block& _b){
 // check done
 Matrix& Matrix::operator*= (const Block& Mb){
   try{
-    if(!ongpu && GMODE == 1 && typeID() == 1 )
+    if(typeID() == 1)
       m_elem = (Real*)mvGPU(m_elem, elemNum() * sizeof(Real), ongpu);
-    if(!ongpu && GMODE == 1 && typeID() == 2 )
+    else if(typeID() == 2)
       cm_elem = (Complex*)mvGPU(cm_elem, elemNum() * sizeof(Complex), ongpu);
     *this = *this * Mb;
   }
@@ -83,19 +81,14 @@ Matrix& Matrix::operator*= (const Block& Mb){
   }
   return *this;
 }
+
 // check done
 Matrix& Matrix::operator*= (Real a){
   try{
-    if(!ongpu && typeID() == 1){
-      if(GMODE == 1)
-        m_elem = (Real*)mvGPU(m_elem, elemNum() * sizeof(Real), ongpu);
+    if(typeID() == 1)
       vectorScal(a, m_elem, elemNum(), ongpu);
-    }
-    if(!ongpu && typeID() == 2){
-      if(GMODE == 1)
-        cm_elem = (Complex*)mvGPU(cm_elem, elemNum() * sizeof(Complex), ongpu);
+    else if(typeID() == 2)
       vectorScal(a, cm_elem, elemNum(), ongpu);
-    }
   }
   catch(const std::exception& e){
     propogate_exception(e, "In function Matrix::operator*=(double):");
@@ -220,19 +213,19 @@ Matrix::Matrix(size_t _Rnum, size_t _Cnum, bool _diag, bool _ongpu): Block(RTYPE
   try{
     init(RTYPE, _ongpu);
     if(elemNum())
-      elemBzero(m_elem, elemNum() * sizeof(Real), ongpu);
+      elemBzero(m_elem, Rnum, Cnum, ongpu, diag);
   }
   catch(const std::exception& e){
     propogate_exception(e, "In constructor Matrix::Matrix(size_t, size_t, bool=false):");
   }
 }
 
-Matrix::Matrix(std::string stp, size_t _Rnum, size_t _Cnum, bool _diag, bool _ongpu){
+Matrix::Matrix(std::string str_tp, size_t _Rnum, size_t _Cnum, bool _diag, bool _ongpu){
   try{
-    if(stp == "R"){
+    if(str_tp == "R"){
       Matrix tmp(RTYPE, _Rnum, _Cnum, _diag, _ongpu);
       *this = tmp;
-    }else if(stp == "C"){
+    }else if(str_tp == "C"){
       Matrix tmp(CTYPE, _Rnum, _Cnum, _diag, _ongpu);
       *this = tmp;
     }

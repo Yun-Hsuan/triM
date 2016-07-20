@@ -1,8 +1,58 @@
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+#include <cusolverDn.h>
+#include <magma.h>
+#include <magma_lapack.h>
+#include <magma_types.h>
+//#include <magma_v2.h>
 #include <uni10/tools/uni10_tools.h>
+#include <uni10/tools/uni10_tools_gpu_kernel.h>
 
 
 
 namespace uni10{
+
+  void magma_print_matrix(double* v, int m, int n, int ldda){
+
+    double* bufv = (double*)malloc(m*n*sizeof(double));
+    printf("[\n");
+    if(magma_is_devptr(v) == 1){
+        printf("\n-- On GPU --\n\n");
+        magma_dgetmatrix(n, m, v, ldda, bufv, n);
+    }else if(magma_is_devptr(v) == 0){
+        printf("-- On CPU --\n");
+        memcpy(bufv, v, m*n*sizeof(double));
+    }
+
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n ; j++)
+            printf("%8.5f  ", bufv[i*n+j]);
+        printf("\n");
+    }
+    printf("];\n");
+
+  }
+
+  void cuda_print_matrix(double* v, int m, int n){
+
+    double* bufv = (double*)malloc(m*n*sizeof(double));
+    printf("[\n");
+    if(magma_is_devptr(v) == 1){
+        printf("\n-- On GPU --\n\n");
+        cudaMemcpy(bufv, v, m*n*sizeof(double), cudaMemcpyDeviceToHost);
+    }else if(magma_is_devptr(v) == 0){
+        printf("-- On CPU --\n");
+        memcpy(bufv, v, m*n*sizeof(double));
+    }
+
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n ; j++)
+            printf("%8.5f  ", bufv[i*n+j]);
+        printf("\n");
+    }
+    printf("];\n");
+
+  }
 
   void guni10_create(int GMODE_, bool printUsage){
     //define the variable ONGPU and GMODE from .uni10rc  
@@ -54,9 +104,8 @@ namespace uni10{
 
     if(GMODE != 0){
       size_t free_db, total_db;
+      magma_init();
       checkCudaError(cudaMemGetInfo(&free_db, &total_db)); 
-      cublasHandle_t handle;
-      checkCublasError(cublasCreat(&handle));
       GPU_FREE_MEM = free_db;
       if(printUsage)
 	fprintf(stderr, "gpu memory info: total memory: %.ld bytes, free memory: %.ld bytes, usage: %.ld bytes\n", total_db, free_db, total_db-free_db);
@@ -67,9 +116,8 @@ namespace uni10{
 
   void guni10_destory(){
 
-      cublasHandle_t handle;
-      checkCublasError(cublasDestroy(handle));
-     
+    magma_finalize();
+
   }
 
   void* elemAlloc(size_t memsize, bool& ongpu){
@@ -88,37 +136,250 @@ namespace uni10{
     return ptr;
   }
 
-  void* elemAlloc(size_t cpu_memsize, size_t gpu_memsize, bool& ongpu){
-    void* ptr = NULL;
-    if(GPU_FREE_MEM - gpu_memsize > 0){
-      checkCudaError(cudaMallocManaged(&ptr, gpu_memsize));
-      GPU_FREE_MEM -= gpu_memsize;
-      ongpu = true;
-    }else{
-      ptr = malloc(cpu_memsize);
-      assert(ptr != NULL);
-      MEM_USAGE += cpu_memsize;
-      ongpu = false;
-    }
-    //printf("ongpu = %d, GPU_MEM_USAGE = %u, allocate %u\n", ongpu, GPU_MEM_USAGE, memsize);
-    return ptr;
-  }
-
   void* elemAllocForce(size_t memsize, bool ongpu){
+
     void* ptr = NULL;
+
     if(ongpu){
       checkCudaError(cudaMallocManaged(&ptr, memsize));
       GPU_FREE_MEM -= memsize;
     }
     else{
       ptr = malloc(memsize);
-      assert(ptr != NULL);
       MEM_USAGE += memsize;
+      assert(ptr != NULL);
     }
     return ptr;
+
   }
 
-  void* elemCopy(void* des, const void* src, size_t memsize, bool des_ongpu, bool src_ongpu){
+  //==================     Magma    =====================/
+  
+  void* elemAlloc(size_t m, size_t n, size_t typesize, bool& ongpu, bool diag){
+
+    void* ptr = NULL;
+    size_t memsize = 0; 
+
+    if(GPU_FREE_MEM - memsize > 0){
+
+      memsize = diag ? magma_roundup(std::min(m, n), blocksize) * typesize : m * magma_roundup(n, blocksize) * typesize;
+      magma_malloc((void**)&ptr, memsize);
+      GPU_FREE_MEM -= memsize;
+      ongpu = true;
+
+    }
+    else{
+
+      memsize = diag ? std::min(m, n) * typesize : m * n * typesize;
+      ptr = malloc(memsize);
+      MEM_USAGE += memsize;
+      ongpu = false;
+      assert(ptr != NULL);
+
+    }
+
+    return ptr;
+
+  }
+
+  void* elemAllocForce(size_t m, size_t n, size_t typesize, bool ongpu, bool diag){
+
+    void* ptr = NULL;
+    size_t memsize = 0;
+    //printf("m: %ld, n: %ld.\n\n", m, n);
+    if(ongpu){
+
+      //magma_dmalloc(&ptr, m*magma_roundup(n, blocksize));
+      memsize = diag ? magma_roundup(std::min(m, n), blocksize) * typesize : m * magma_roundup(n, blocksize) * typesize;
+      magma_malloc((void**)&ptr, memsize);
+      GPU_FREE_MEM -= memsize;
+
+    }
+    else{
+
+      memsize = diag ? std::min(m, n) * typesize : m * n * typesize;
+      ptr = (double*)malloc(memsize);
+      MEM_USAGE += memsize;
+      assert(ptr != NULL);
+
+    }
+    return ptr;
+
+  }
+
+  void* elemCopy(double* des, const double* src, size_t m, size_t n, bool des_ongpu, bool src_ongpu, bool diag){
+
+    if(diag){
+
+      n = std::min(m, n); 
+      m = 1;
+
+    }
+    
+    if(des_ongpu){
+
+      if(src_ongpu){
+
+	size_t ldd = magma_roundup(n, blocksize);
+	magma_dcopymatrix(n, m, src, ldd, des, ldd);
+
+      }
+      else{
+
+	magma_dsetmatrix(n, m, src, n, (magmaDouble_ptr)des, magma_roundup(n, blocksize));
+
+      }
+
+    }else{
+
+      if(src_ongpu){
+
+	magma_dgetmatrix(n, m, src, magma_roundup(n, blocksize), des, n);
+      }
+      else{
+
+	memcpy(des, src, m * n * sizeof(double));
+
+      }
+
+    }
+
+    return des;
+
+  }
+
+  void* elemCopy(std::complex<double>* des, const std::complex<double>* src, size_t m, size_t n, bool des_ongpu, bool src_ongpu, bool diag){
+    
+    if(diag){
+      n = std::min(m, n); 
+      m = 1;
+    }
+
+    if(des_ongpu){
+
+      if(src_ongpu){
+
+	size_t ldd = magma_roundup(n, blocksize);
+	magma_zcopymatrix(n, m, (magmaDoubleComplex*)src, ldd, (magmaDoubleComplex*)des, ldd);
+
+      }
+      else{
+
+	magma_zsetmatrix(n, m, (magmaDoubleComplex*)src, n, (magmaDoubleComplex*)des, magma_roundup(n, blocksize));
+
+      }
+    }else{
+
+      if(src_ongpu){
+
+	magma_zgetmatrix(n, m, (magmaDoubleComplex*)src, magma_roundup(n, blocksize), (magmaDoubleComplex*)des, n);
+
+      }
+      else{
+
+        memcpy(des, src, m * n * sizeof(std::complex<double>));
+
+      }
+
+    }
+
+    return des;
+
+  }
+
+  void elemRand(double* elem, size_t m, size_t n, bool ongpu, bool diag){
+
+    magma_int_t elemNum = 0;
+
+    if(diag){
+
+      elemNum = std::min(m, n);
+      n = std::min(m, n);
+      m = 1;
+
+    }
+    else{
+
+      elemNum = n * m;
+
+    }
+
+    double* h_elem = (double*)malloc(elemNum*sizeof(double));
+
+    magma_int_t ione = 1;
+
+    magma_int_t ISEED[4] = {0, 0, 0, 1};
+
+    lapackf77_dlarnv(&ione, ISEED, &elemNum, h_elem);
+
+    if(ongpu)
+      magma_dsetmatrix(n, m, h_elem, n, elem, magma_roundup(n, blocksize));
+    else
+      memcpy(elem, h_elem, elemNum*sizeof(double));
+
+  }
+
+  void elemBzero(double* ptr, size_t m, size_t n, bool ongpu, bool diag){
+    
+    size_t memsize = 0;
+
+    if(ongpu){
+
+      memsize = diag ? magma_roundup( std::min(m, n),  blocksize ) * sizeof(double) : m * magma_roundup(n, blocksize) * sizeof(double);
+
+      checkCudaError(cudaMemset(ptr, 0, memsize));
+
+    }
+    else{
+
+      memsize = diag ? std::min(m, n) * sizeof(double) : m * n * sizeof(double);
+
+      memset(ptr, 0, memsize);
+
+    }
+
+  }
+
+  void elemBzero(std::complex<double>* ptr, size_t m, size_t n, bool ongpu, bool diag){
+    
+    size_t memsize = 0;
+
+    if(ongpu){
+
+      memsize = diag ? magma_roundup(std::min(m, n), blocksize) * sizeof(std::complex<double>) : m * magma_roundup(n, blocksize) * sizeof(std::complex<double>);
+
+      checkCudaError(cudaMemset(ptr, 0, memsize));
+
+    }
+    else{
+
+      memsize = diag ? std::min(m, n) * sizeof(std::complex<double>) : m * n * sizeof(std::complex<double>);
+
+      memset(ptr, 0, memsize);
+
+    }
+
+  }
+
+//#ifdef CUDA_SUPPORT
+  void magma_to_cuda(size_t m, size_t n, double* mag_ptr, size_t ldda, double* cu_ptr){
+      
+      for(size_t i = 0; i < m; i++)
+	checkCudaError(cudaMemcpy(cu_ptr+(i*n), mag_ptr+(i*ldda), n * sizeof(double), cudaMemcpyDeviceToDevice));
+
+  }
+
+  void cuda_to_magma(size_t m, size_t n, double* cu_ptr, double* mag_ptr, size_t ldda){
+
+      for(size_t i = 0; i < m; i++)
+	checkCudaError(cudaMemcpy(mag_ptr+(i*ldda), cu_ptr+(i*n), n * sizeof(double), cudaMemcpyDeviceToDevice));
+
+  }
+//#endif
+  //=====================================================/
+  
+  void* elemCopy(void* des, const void* src, size_t memsize,bool des_ongpu, bool src_ongpu){
+
     if((des_ongpu)){
 
       if(src_ongpu){
@@ -139,125 +400,44 @@ namespace uni10{
       //printf("mvCPU\n");
     }
     return des;
+
   }
+
 
   void elemFree(void* ptr, size_t memsize, bool ongpu){
+
     assert(ptr != NULL);
+
     if(ongpu){
-      //printf("FREE(%x) %d from GPU, %d used\n", ptr, memsize, GPU_MEM_USAGE);
-      checkCudaError(cudaFree(ptr));
+
+      magma_free(ptr);
+
       GPU_FREE_MEM += memsize;
+
     }else{
-      //printf("FREE %d from CPU, %d used\n", memsize, MEM_USAGE);
+
       free(ptr);
+
       MEM_USAGE -= memsize;
     }
+
     ptr = NULL;
+
   }
+
   void elemBzero(void* ptr, size_t memsize, bool ongpu){
+    
     if(ongpu){
+
       checkCudaError(cudaMemset(ptr, 0, memsize));
-    }
-    else
-      memset(ptr, 0, memsize);
-  }
 
-  __global__ void gpu_rand(double* elem, size_t N){
-    size_t idx = blockIdx.y * UNI10_BLOCKMAX * UNI10_THREADMAX +  blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int r = (1664525 * ((1664525 * idx + 1013904223) % UINT_MAX) + 1013904223) % UINT_MAX;
-    if(idx < N)
-      elem[idx] = double(r) / UINT_MAX;
-  }
-
-  void elemRand(double* elem, size_t N, bool ongpu){
-    if(ongpu){
-      size_t blockNum = (N + UNI10_THREADMAX - 1) / UNI10_THREADMAX;
-      dim3 gridSize(blockNum % UNI10_BLOCKMAX, (blockNum + UNI10_BLOCKMAX - 1) / UNI10_BLOCKMAX);
-      gpu_rand<<<gridSize, UNI10_THREADMAX>>>(elem, N);
     }
     else{
-      for(size_t i = 0; i < N; i++)
-	elem[i] = ((double)rand()) / RAND_MAX; //lapack_uni01_sampler();
+
+      memset(ptr, 0, memsize);
+
     }
-  }
 
-  __global__ void _setDiag(double* elem, double* diag_elem, size_t M, size_t N, size_t diag_N){
-    size_t idx = blockIdx.y * UNI10_BLOCKMAX * UNI10_THREADMAX +  blockIdx.x * blockDim.x + threadIdx.x;
-    if(idx < diag_N && idx < M && idx < N)
-      elem[idx * N + idx] = diag_elem[idx];
-  }
-
-  __global__ void _getDiag(double* elem, double* diag_elem, size_t M, size_t N, size_t diag_N){
-    size_t idx = blockIdx.y * UNI10_BLOCKMAX * UNI10_THREADMAX +  blockIdx.x * blockDim.x + threadIdx.x;
-    if(idx < diag_N && idx < M && idx < N)
-      diag_elem[idx] = elem[idx * N + idx];
-  }
-
-  void setDiag(double* elem, double* diag_elem, size_t M, size_t N, size_t diag_N, bool ongpu, bool diag_ongpu){
-    if((ongpu)){
-      size_t blockNum = (N + UNI10_THREADMAX - 1) / UNI10_THREADMAX;
-      dim3 gridSize(blockNum % UNI10_BLOCKMAX, (blockNum + UNI10_BLOCKMAX - 1) / UNI10_BLOCKMAX);
-      if(diag_ongpu){
-	_setDiag<<<gridSize, UNI10_THREADMAX>>>(elem, diag_elem, M, N, diag_N);
-      }
-      else{
-	size_t memsize = diag_N * sizeof(double);
-	double* src_elem;
-	checkCudaError(cudaMalloc(&src_elem, memsize));
-	checkCudaError(cudaMemcpy(src_elem, diag_elem, memsize, cudaMemcpyHostToDevice));
-	//printf("mvGPU");
-	_setDiag<<<gridSize, UNI10_THREADMAX>>>(elem, src_elem, M, N, diag_N);
-	checkCudaError(cudaFree(src_elem));
-      }
-    }else{
-      double* src_elem;
-      if(diag_ongpu){
-	size_t memsize = diag_N * sizeof(double);
-	src_elem = (double*) malloc(memsize);
-	checkCudaError(cudaMemcpy(src_elem, diag_elem, memsize, cudaMemcpyDeviceToHost));
-	//printf("mvCPU");
-      }
-      else
-	src_elem = diag_elem;
-      int min = M < N ? M : N;
-      min = min < diag_N ? min : diag_N;
-      for(size_t i = 0; i < min; i++)
-	elem[i * N + i] = src_elem[i];
-    }
-  }
-
-  void getDiag(double* elem, double* diag_elem, size_t M, size_t N, size_t diag_N, bool ongpu, bool diag_ongpu){
-    if((ongpu)){
-      size_t blockNum = (N + UNI10_THREADMAX - 1) / UNI10_THREADMAX;
-      dim3 gridSize(blockNum % UNI10_BLOCKMAX, (blockNum + UNI10_BLOCKMAX - 1) / UNI10_BLOCKMAX);
-      if(diag_ongpu){
-	_getDiag<<<gridSize, UNI10_THREADMAX>>>(elem, diag_elem, M, N, diag_N);
-      }
-      else{
-	size_t memsize = diag_N * sizeof(double);
-	double* tmp_elem;
-	checkCudaError(cudaMalloc(&tmp_elem, memsize));
-	_getDiag<<<gridSize, UNI10_THREADMAX>>>(elem, tmp_elem, M, N, diag_N);
-	checkCudaError(cudaMemcpy(diag_elem, tmp_elem, memsize, cudaMemcpyHostToDevice));
-	//printf("mvGPU");
-	checkCudaError(cudaFree(tmp_elem));
-      }
-    }else{
-      double* tmp_elem;
-      size_t memsize = diag_N * sizeof(double);
-      if(diag_ongpu)
-	tmp_elem = (double*)malloc(memsize);
-      else
-	tmp_elem = diag_elem;
-      int min = M < N ? M : N;
-      min = min < diag_N ? min : diag_N;
-      for(size_t i = 0; i < min; i++)
-	tmp_elem[i] = elem[i * N + i];
-      if(diag_ongpu){
-	checkCudaError(cudaMemcpy(diag_elem, tmp_elem, memsize, cudaMemcpyDeviceToHost));
-	//printf("mvCPU");
-      }
-    }
   }
 
   void* mvGPU(void* elem, size_t memsize, bool& ongpu){ 
@@ -314,28 +494,6 @@ namespace uni10{
       GPU_FREE_MEM += memsize;
     else
       MEM_USAGE -= memsize;
-  }
-
-  __global__ void _reshapeElem(double* oldElem, int bondNum, size_t elemNum, size_t* offset, double* newElem){
-    size_t oldIdx = blockIdx.y * UNI10_BLOCKMAX * UNI10_THREADMAX +  blockIdx.x * blockDim.x + threadIdx.x;
-    size_t idx = oldIdx;
-    size_t newIdx = 0;
-    if(idx < elemNum){
-      for(int i = 0; i < bondNum; i++){
-	newIdx += (idx/offset[i]) * offset[bondNum + i];
-	idx = idx % offset[i];
-      }
-      newElem[newIdx] = oldElem[oldIdx];
-    }
-  }
-
-  void reshapeElem(double* oldElem, int bondNum, size_t elemNum, size_t* offset, double* newElem){
-    size_t* D_offset;
-    assert(cudaMalloc((void**)&D_offset, 2 * sizeof(size_t) * bondNum) == cudaSuccess);
-    assert(cudaMemcpy(D_offset, offset, 2 * sizeof(size_t) * bondNum, cudaMemcpyHostToDevice) == cudaSuccess);
-    size_t blockNum = (elemNum + UNI10_THREADMAX - 1) / UNI10_THREADMAX;
-    dim3 gridSize(blockNum % UNI10_BLOCKMAX, (blockNum + UNI10_BLOCKMAX - 1) / UNI10_BLOCKMAX);
-    _reshapeElem<<<gridSize, UNI10_THREADMAX>>>(oldElem, bondNum, elemNum, D_offset, newElem);
   }
 
   double getElemAt(size_t idx, double* elem, bool ongpu){

@@ -29,17 +29,10 @@
 *****************************************************************************/
 #ifndef MATRIX_H
 #define MATRIX_H
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <assert.h>
-#include <string.h>
-#include <cmath>
-#include <stdexcept>
-#include <sstream>
-#include <cstdio>
+
+//#include <uni10/tools/uni10_tools.h>
+//#include <uni10/numeric/lapack/uni10_lapack.h>
 #include <uni10/data-structure/Block.h>
-#include <uni10/tools/uni10_tools.h>
 
 namespace uni10{
 
@@ -79,7 +72,8 @@ public:
 
     bool toGPU();
     
-	  /*********************  OPERATOR **************************/
+    /*********************  OPERATOR **************************/
+
     /// @brief Assigns to Matrix
     ///
     /// Assigns the content of \c mat to Matrix, replacing the original content by reallocating new memory
@@ -111,6 +105,7 @@ public:
     Matrix& operator+= (const Block& Mb);
 
     /*********************  NO TYPE **************************/
+
     ///@brief Default constructor
     ///
     Matrix();
@@ -123,7 +118,7 @@ public:
     /// @param _Cnum Number of Columns
     /// @param _diag Set \c true for diagonal matrix, defaults to \c false
     Matrix(size_t _Rnum, size_t _Cnum, bool _diag=false, bool _ongpu=ONGPU);
-    Matrix(std::string tp, size_t _Rnum, size_t _Cnum, bool _diag=false, bool _ongpu=ONGPU);
+    Matrix(std::string str_tp, size_t _Rnum, size_t _Cnum, bool _diag=false, bool _ongpu=ONGPU);
     /// @brief Copy constructor
     Matrix(const Matrix& _m);
     /// @overload
@@ -375,11 +370,12 @@ public:
     /*****************************************************/
 
 private:
+
     /*********************  NO TYPE **********************/
 
-    void MelemFree();
-    void setMelemBNULL();
     void init(const Real* _m_elem, const Complex* _cm_elem, bool src_ongpu);
+    void setMelemBNULL();
+    void MelemFree();
 
     /*********************  REAL **********************/
 

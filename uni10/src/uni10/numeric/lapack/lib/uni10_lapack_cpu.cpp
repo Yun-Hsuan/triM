@@ -35,10 +35,8 @@
 #else
   #include <uni10/numeric/lapack/uni10_lapack_wrapper.h>
 #endif
-#include <string.h>
 #include <uni10/numeric/lapack/uni10_lapack.h>
-#include <uni10/tools/uni10_tools.h>
-#include <iostream>
+
 namespace uni10{
 void matrixMul(double* A, double* B, int M, int N, int K, double* C, bool ongpuA, bool ongpuB, bool ongpuC){
 	double alpha = 1, beta = 0;
@@ -152,12 +150,14 @@ void eigSyDecompose(double* Kij, int N, double* Eig, double* EigVec, bool ongpu)
   }
 	free(work);
 }
+
 // lapack is builded by fortran which is load by column, so we use 
 // dorgqr -> lq
 // dorglq -> qr
 // dorgrq -> ql 
 // dorgql -> rq
 void matrixQR(double* Mij_ori, int M, int N, double* Q, double* R, bool ongpu){
+
   assert(M >= N);
   double* Mij = (double*)malloc(N*M*sizeof(double));
   memcpy(Mij, Mij_ori, N*M*sizeof(double));
@@ -186,6 +186,7 @@ void matrixQR(double* Mij_ori, int M, int N, double* Q, double* R, bool ongpu){
   free(tau);
   free(workdge);
   free(workdor);
+
 }
 
 void matrixRQ(double* Mij_ori, int M, int N, double* Q, double* R, bool ongpu){
@@ -390,26 +391,26 @@ double vectorSum(double* X, size_t N, int inc, bool ongpu){
     sum += X[idx];
     idx += inc;
   }
-	return sum;
+  return sum;
 }
 
 double vectorNorm(double* X, size_t N, int inc, bool ongpu){
-	double norm2 = 0;
-	double tmp = 0;
-	int64_t left = N;
-	size_t offset = 0;
-	int chunk;
-	while(left > 0){
-		if(left > INT_MAX)
-			chunk = INT_MAX;
-		else
-			chunk = left;
-		tmp = dnrm2(&chunk, X + offset, &inc);
-		norm2 += tmp * tmp;
-		offset += chunk;
-		left -= INT_MAX;
-	}
-	return sqrt(norm2);
+  double norm2 = 0;
+  double tmp = 0;
+  int64_t left = N;
+  size_t offset = 0;
+  int chunk;
+  while(left > 0){
+    if(left > INT_MAX)
+      chunk = INT_MAX;
+    else
+      chunk = left;
+    tmp = dnrm2(&chunk, X + offset, &inc);
+    norm2 += tmp * tmp;
+    offset += chunk;
+    left -= INT_MAX;
+  }
+  return sqrt(norm2);
 }
 
 bool lanczosEV(double* A, double* psi, size_t dim, size_t& max_iter, double err_tol, double& eigVal, double* eigVec, bool ongpu){
@@ -604,34 +605,35 @@ bool lanczosEVL(double* A, double* psi, size_t dim, size_t& max_iter, double err
 
 /***** Complex version *****/
 void matrixSVD(std::complex<double>* Mij_ori, int M, int N, std::complex<double>* U, double *S, std::complex<double>* vT, bool ongpu){
-	std::complex<double>* Mij = (std::complex<double>*)malloc(M * N * sizeof(std::complex<double>));
-	memcpy(Mij, Mij_ori, M * N * sizeof(std::complex<double>));
-	int min = std::min(M, N);
-	int ldA = N, ldu = N, ldvT = min;
-	int lwork = -1;
+  std::complex<double>* Mij = (std::complex<double>*)malloc(M * N * sizeof(std::complex<double>));
+  memcpy(Mij, Mij_ori, M * N * sizeof(std::complex<double>));
+  int min = std::min(M, N);
+  int ldA = N, ldu = N, ldvT = min;
+  int lwork = -1;
   std::complex<double> worktest;
-	int info;
+  int info;
   double *rwork = (double*) malloc(std::max(1, 5 * min) * sizeof(double));
-	zgesvd((char*)"S", (char*)"S", &N, &M, Mij, &ldA, S, vT, &ldu, U, &ldvT, &worktest, &lwork, rwork, &info);
+  zgesvd((char*)"S", (char*)"S", &N, &M, Mij, &ldA, S, vT, &ldu, U, &ldvT, &worktest, &lwork, rwork, &info);
   if(info != 0){
     std::ostringstream err;
     err<<"Error in Lapack function 'dgesvd': Lapack INFO = "<<info;
     throw std::runtime_error(exception_msg(err.str()));
   }
-	lwork = (int)(worktest.real());
-	std::complex<double> *work = (std::complex<double>*)malloc(lwork*sizeof(std::complex<double>));
-	zgesvd((char*)"S", (char*)"S", &N, &M, Mij, &ldA, S, vT, &ldu, U, &ldvT, work, &lwork, rwork, &info);
+  lwork = (int)(worktest.real());
+  std::complex<double> *work = (std::complex<double>*)malloc(lwork*sizeof(std::complex<double>));
+  zgesvd((char*)"S", (char*)"S", &N, &M, Mij, &ldA, S, vT, &ldu, U, &ldvT, work, &lwork, rwork, &info);
   if(info != 0){
     std::ostringstream err;
     err<<"Error in Lapack function 'zgesvd': Lapack INFO = "<<info;
     throw std::runtime_error(exception_msg(err.str()));
   }
   free(rwork);
-	free(work);
-	free(Mij);
+  free(work);
+  free(Mij);
 }
+
 void matrixSVD(std::complex<double>* Mij_ori, int M, int N, std::complex<double>* U, std::complex<double>* S_ori, std::complex<double>* vT, bool ongpu){
-	int min = std::min(M, N);
+  int min = std::min(M, N);
   double* S = (double*)malloc(min * sizeof(double));
   matrixSVD(Mij_ori, M, N, U, S, vT, ongpu);
   elemCast(S_ori, S, min, false, false);
@@ -652,7 +654,7 @@ void matrixInv(std::complex<double>* A, int N, bool diag, bool ongpu){
     err<<"Error in Lapack function 'dgetrf': Lapack INFO = "<<info;
     throw std::runtime_error(exception_msg(err.str()));
   }
-	int lwork = -1;
+  int lwork = -1;
   std::complex<double> worktest;
   zgetri(&N, A, &N, ipiv, &worktest, &lwork, &info);
   if(info != 0){
@@ -660,7 +662,7 @@ void matrixInv(std::complex<double>* A, int N, bool diag, bool ongpu){
     err<<"Error in Lapack function 'dgetri': Lapack INFO = "<<info;
     throw std::runtime_error(exception_msg(err.str()));
   }
-	lwork = (int)(worktest.real());
+  lwork = (int)(worktest.real());
   std::complex<double> *work = (std::complex<double>*)malloc(lwork * sizeof(std::complex<double>));
   zgetri(&N, A, &N, ipiv, work, &lwork, &info);
   if(info != 0){
