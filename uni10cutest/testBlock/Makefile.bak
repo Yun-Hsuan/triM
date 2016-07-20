@@ -1,0 +1,82 @@
+GPU_OBJ := $(GPU_LIB)/qnum.o $(GPU_LIB)/bond.o $(GPU_LIB)/block.o $(GPU_LIB)/blockreal.o $(GPU_LIB)/blockcomplex.o $(GPU_LIB)/blocktools.o $(GPU_LIB)/uni10_tools.o $(GPU_LIB)/uni10_tools_gpu.o $(GPU_LIB)/uni10_dgemm.o $(GPU_LIB)/uni10_lapack_gpu.o $(GPU_LIB)/hdf5io.o $(GPU_LIB)/matrix.o $(GPU_LIB)/matrixreal.o $(GPU_LIB)/matrixcomplex.o $(GPU_LIB)/matrixtools.o $(GPU_LIB)/UniTensor.o $(GPU_LIB)/UniTensorreal.o $(GPU_LIB)/UniTensorcomplex.o $(GPU_LIB)/UniTensortools.o $(GPU_LIB)/network.o
+
+
+GPU_LIB := libuni10
+UNI10_SRC_ROOT :=/home/Yun-Hsuan/GitRepo/tensorlib/uni10/src/uni10
+SRC := .
+
+OPENBLASDIR  ?= /usr/local/openblas
+MAGMA_SRC_ROOT :=/home/Yun-Hsuan/Installization/MAGMA/magma-2.0.2
+
+CC            =	icpc
+FORT          = gfortran
+LD            = icpc
+CFLAGS        = -O3 -fPIC -DADD_ -Wall -Wshadow -openmp -DMAGMA_WITH_MKL -DMKL_ILP64 -DMAGMA_ILP64 -pedantic -Wno-long-long -std=c++11 
+
+LDFLAGS       = -std=c++11 -fPIC -openmp -Wl,-rpath,$(MAGMADIR)/lib
+NVCCOPT       = -std=c++11 -O3 -m64 -arch=sm_30
+NVCC          = nvcc
+
+MAGMA_CFLAGS   := -DHAVE_CUBLAS -DMIN_CUDA_ARCH=200 \
+	-I$(CUDADIR)/include \
+	-I$(MAGMADIR)/include \
+ 	-I$(MKLROOT)/include \
+	-I$(MAGMA_SRC_ROOT)/control \
+	-I$(MAGMA_SRC_ROOT)/testing
+
+MAGMA_F90FLAGS := -I$(MAGMADIR)/include -Dmagma_devptr_t="integer(kind=8)"
+
+MAGMA_LIBS   := -L$(MAGMADIR)/lib -lmagma -lmagma_sparse\
+	-L$(CUDADIR)/lib64 \
+	-L$(MAGMA_SRC_ROOT)/testing -ltest \
+	-L$(MAGMA_SRC_ROOT)/testing/lin -llapacktest \
+	-L$(MKLROOT)/lib/intel64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lpthread -lstdc++ -lm -lcublas -lcusparse -lcudart 
+
+INC := $(UNI10_ROOT)/include
+LIB := ./libuni10_gpu.a
+
+# Alternatively, using pkg-config (see README.txt):
+# MAGMA_CFLAGS := $(shell pkg-config --cflags magma)
+# MAGMA_LIBS   := $(shell pkg-config --libs   magma)
+#
+
+TEST_OBJ := gpu_magma_test.o
+
+gpu: libuni10_gpu.a
+
+exus: cpu_main.e gpu_main.e
+
+tests: gpu_magma_test.o gpu_magma_test.e
+
+
+# ----------------------------------------
+
+all: exu obj
+
+obj: gpu
+
+exu: exus
+
+test: tests
+
+clean:
+	-rm -f main main2 $(GPU_LIB)/*.o $(GPU_LIB)/*.a *.mod
+
+.SUFFIXES:
+
+
+# ----------------------------------------
+# C++ example
+%.o: %.cu
+	$(CC) $(CFLAGS) $(MAGMA_CFLAGS) -c -o $@ $<
+
+%.o: %.cpp
+	$(CC) $(CFLAGS) $(MAGMA_CFLAGS) -c -o $@ $<
+
+%.e: %.cpp
+	$(LD) $(LDFLAGS) $< -o $@ $(MAGMA_LIBS)
+
+#$(MAGMA_LIBS)
+#$(LD) $(LDFLAGS) -o $@ $^ $(MAGMA_LIBS)
+#-lopenblas
+#-L$(OPENBLASDIR)/lib \

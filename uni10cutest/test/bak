@@ -1,0 +1,7 @@
+INC:
+  -I$(MAGMA_SRC_ROOT)/control \
+  -I$(MAGMA_SRC_ROOT)/testing \
+LIB:
+  -L$(MAGMA_SRC_ROOT)/testing -ltest \
+  -L$(MAGMA_SRC_ROOT)/lin \
+
